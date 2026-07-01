@@ -237,16 +237,27 @@ def lookup_number(e164_number):
 
 
 def parse_leads(raw_text):
+    """Parse pasted leads. Handles comma-separated ('Name, Phone') and
+    tab-separated (pasted directly from Excel/Sheets, e.g. 'First\tLast\tPhone')
+    formats. For multi-column rows, the last column is treated as the phone
+    number and everything before it is joined as the name."""
     leads = []
     for line in raw_text.strip().splitlines():
-        line = line.strip()
-        if not line:
+        line = line.strip("\r\n")
+        if not line.strip():
             continue
-        parts = [p.strip() for p in line.split(",")]
+
+        # Prefer tab-splitting if tabs are present (Excel/Sheets paste)
+        if "\t" in line:
+            parts = [p.strip() for p in line.split("\t") if p.strip() != ""]
+        else:
+            parts = [p.strip() for p in line.split(",") if p.strip() != ""]
+
         if len(parts) < 2:
             continue
-        name = parts[0]
-        phone = parts[1]
+
+        phone = parts[-1]
+        name = " ".join(parts[:-1])
         leads.append((name, phone))
     return leads
 
